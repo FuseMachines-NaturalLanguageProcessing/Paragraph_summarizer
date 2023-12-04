@@ -57,4 +57,60 @@ class NewsData(Dataset):
         labels_attention_mask = summary_encoding['attention_mask'].flatten()
         ) 
   
+class NewsDataModule(pl.LightningDataModule):
+  def __init__(
+      self,
+      train: pd.DataFrame,
+      test: pd.DataFrame,
+      tokenizer: T5TokenizerFast,
+      batch_size: int = 8,
+      text_max_token_len: int = 512,
+      summary_max_token_len: int = 128
+      ):
+        super().__init__()
+        self.train_set = train
+        self.test_set = test
+        self.batch_size = batch_size
+        self.tokenizer = tokenizer
+        self.text_max_token_len = text_max_token_len
+        self.summary_max_token_len = summary_max_token_len
   
+  def setup(self, stage=None):
+    self.train_dataset = NewsData(
+        self.train_set,
+        self.tokenizer,
+        self.text_max_token_len,
+        self.summary_max_token_len
+    )
+
+    self.test_dataset = NewsData(
+        self.test_set,
+        self.tokenizer,
+        self.text_max_token_len,
+        self.summary_max_token_len
+    )
+
+  def train_dataloader(self):
+    return DataLoader(
+        self.train_dataset,
+        batch_size = self.batch_size,
+        shuffle = True,
+        num_workers=1
+    )
+    
+    
+  def test_dataloader(self):
+      return DataLoader(
+          self.test_dataset,
+          batch_size=self.batch_size,
+          shuffle=False,
+          num_workers=1
+      )
+  
+  def val_dataloader(self):
+      return DataLoader(
+          self.test_dataset,
+          batch_size=self.batch_size,
+          shuffle=False,
+          num_workers=1
+      )
